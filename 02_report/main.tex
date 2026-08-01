@@ -1,0 +1,155 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\geometry{margin=0.75in}
+
+\title{\textbf{Adaptive Zero-Shot Industrial Inspection: Deconstructing the WinCLIP Architecture through Dynamic Domain Adaptation}}
+\author{Group Number : 16 \\ Pratham Galbale [2023A1PS0198P] \\Kritarth Gusain [2023AAPS0764P]\\Yuvraj Singh Shehrawat [2023A7PS0538P]}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Zero-shot anomaly detection represents a paradigm shift in industrial quality control, removing the need for defect-specific training data. In this work, we implement and evaluate the WinCLIP framework, extending it via a Dynamic Domain Adaptation Prior (DAP). We perform a multi-metric ablation study across four industrial datasets, tracking AUROC, AUPRC, and F1-Max. Our findings reveal that while standard Vision-Language Models excel in controlled environments, our dynamic assessment module is critical for handling the stochastic noise of real-world factory data, providing a substantial boost in F1-scores and precision-recall stability.
+\end{abstract}
+
+\section{Introduction}
+Industrial Anomaly Detection (IAD) is fundamentally a "needle in a haystack" problem. In manufacturing, "normal" samples are high-volume, while "anomalous" samples are rare and heterogeneous. Traditional supervised learning fails due to this class imbalance. WinCLIP addresses this by using the shared latent space of CLIP to perform zero-shot alignment between images and textual defect descriptions.
+
+This study explores the architectural limits of WinCLIP. We investigate how spatial resolution (multi-scale windowing) and semantic resolution (prompt engineering) interact with environmental noise. We propose a Dynamic DAP layer that "tunes" the model based on low-level image statistics, ensuring that the VLM is not misled by lighting fluctuations or sensor grain.
+
+\section{Formal Notations}
+To maintain mathematical clarity throughout the report, we define the following notations used in our alignment logic:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Symbol} & \textbf{Definition} \\ \midrule
+$I$ & Input Image Tensor \\
+$E_v(\cdot)$ & CLIP Vision Encoder \\
+$E_t(\cdot)$ & CLIP Text Encoder \\
+$\mathcal{K}$ & Set of Window Scales $\{2, 3\}$ \\
+$\vec{\alpha}$ & Image Quality Degradation Vector \\
+$\mathbf{t}_{i}$ & Textual Anchor Embedding \\
+$S_{p}$ & Pixel-level Anomaly Score \\ \bottomrule
+\end{tabular}
+\caption{Mathematical Notations used in this work.}
+\end{table}
+
+\section{Theoretical Framework}
+\subsection{CLIP Latent Space Alignment}
+CLIP aligns a visual encoder $E_v$ and a text encoder $E_t$. For any image patch $x$ and text prompt $y$, the anomaly score is derived from the cosine similarity:
+\begin{equation}
+\text{score}(x, y) = \frac{E_v(x) \cdot E_t(y)}{\|E_v(x)\| \|E_t(y)\|}
+\end{equation}
+
+\subsection{WinCLIP Spatial Windowing}
+To overcome CLIP's global bias, WinCLIP applies $E_v$ to a set of sliding windows. We utilize an ensemble of scales $K \in \{2, 3\}$. This allows the model to detect local features like scratches that would otherwise be averaged out in a global embedding.
+
+\section{Methodology: Dynamic DAP}
+The core innovation of this project is the **Environment-Aware Preprocessor**. We compute a degradation vector $\vec{\alpha}$ to characterize image quality.
+
+\subsection{OpenCV Metric Formulations}
+\begin{itemize}
+    \item \textbf{Blur ($\alpha_{b}$):} Ratio of Laplacian variance between a Gaussian-filtered image and raw input. 
+    \item \textbf{Exposure ($\alpha_{e}$):} Measures the deviation from the neutral sensor midpoint ($\mu=127.5$).
+    \item \textbf{Noise Entropy ($\alpha_{g}$):} Measures pixel-level Shannon entropy $H$ to identify high-frequency sensor grain.
+\end{itemize}
+
+\subsection{Algorithm for Adaptive Weighting}
+\begin{algorithm}
+\caption{Dynamic DAP Anchor Weighting}
+\begin{algorithmic}
+\STATE \textbf{Input:} Image $I$, Templates $T$
+\STATE 1. Extract $\alpha_{blur}, \alpha_{exp}, \alpha_{grain}$ from $I$ via OpenCV
+\STATE 2. Generate Base Prompt Embeddings $\mathbf{P}_{base}$
+\STATE 3. Apply Weighting: $\mathbf{t}_{dyn} = \sum (\alpha_i \cdot \mathbf{P}_{i})$
+\STATE 4. Normalize: $\mathbf{t}_{final} = \mathbf{t}_{dyn} / \|\mathbf{t}_{dyn}\|$
+\RETURN $\mathbf{t}_{final}$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Experimental Setup}
+\subsection{Dataset Taxonomy}
+We categorized our experiments into three environmental tiers:
+\begin{enumerate}
+    \item \textbf{High-Fidelity (MVTec AD):} Laboratory-grade samples with controlled lighting and fixed camera angles.
+    \item \textbf{Noisy Industrial (Casting, Mag. Tile):} Images from active assembly lines containing metallic glares and varying focal lengths.
+    \item \textbf{Synthetic (MVTec Synthetic):} Algorithmic anomalies used to test the model's sensitivity to artificial artifacts.
+\end{enumerate}
+
+\subsection{Hardware and Scope Justification}
+Experiments were performed on a high-performance GPU cluster. Due to the computational complexity of the `F.unfold` operations required for windowing, we limited scales to $\{2, 3\}$. Larger scales (4, 5) were excluded to maintain a memory footprint below 8GB VRAM, ensuring real-time feasibility.
+
+\section{Quantitative Results}
+The table below integrates the results obtained across all tiers using the full dynamic model.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Full Model Comprehensive Metrics}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{AUROC} & \textbf{AUPRC} & \textbf{F1-Max} \\ \midrule
+Casting Data & 0.8105 & 0.8891 & 0.8146 \\
+Magnetic Tile & 0.7186 & 0.8351 & 0.8882 \\
+MVTec AD & 0.8098 & 0.9112 & 0.8787 \\
+MVTec Synthetic & 0.7533 & 0.8784 & 0.8716 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\section{In-Depth Ablation Study}
+We performed a systematic "leave-one-out" ablation to study the necessity of spatial windowing and textual DAP components.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Ablation Study: Noisy vs. Baseline Environments}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{AUROC} & \textbf{AUPRC} & \textbf{F1-Max} \\ \midrule
+\textbf{Casting (Full)} & \textbf{0.8105} & \textbf{0.8891} & \textbf{0.8146} \\
+Casting (Ablation) & 0.6576 & 0.7525 & 0.7766 \\ \midrule
+\textbf{Mag. Tile (Full)} & \textbf{0.7186} & \textbf{0.8351} & \textbf{0.8882} \\
+Mag. Tile (Ablation) & 0.5953 & 0.7294 & 0.8390 \\ \midrule
+\textbf{MVTec AD (Full)} & \textbf{0.8098} & \textbf{0.9112} & 0.8787 \\
+MVTec AD (Ablation) & 0.7988 & 0.9013 & 0.8815 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The Necessity of Background Grounding}
+One key ablation involved removing the "Background Prompts." For the Casting dataset, this caused a drop in AUROC as the model began to classify the dark regions of the submersible pump impeller as "missing material." By grounding the model with background descriptions, we improved the decision boundary significantly.
+
+\subsection{Semantic Density in Zero-Shot Learning}
+The drop to 0.5840 in the "Minimal States" ablation suggests that CLIP requires a "cloud" of semantic synonyms. Using only the word "damaged" is less effective than an ensemble including "broken," "cracked," "deformed," and "dented."
+
+\section{Discussion and Limitations}
+\subsection{Physical vs. Digital Noise}
+The performance regression on **MVTec Synthetic** (Full: 0.7533 vs. Ablation: 0.7673) is a crucial observation. Our Laplacian metric misidentifies the high contrast of synthetic edges as sensor noise. This highlights a limitation: while our model is superior for **real factory floors**, it is less suited for purely synthetic benchmarks.
+
+\section{Future Work}
+We plan to explore "Learnable DAPs," where the $\vec{\alpha}$ weights are not calculated via OpenCV but learned through a small linear layer during a single-epoch fine-tuning phase on "normal" samples.
+
+\section{Conclusion}
+Our research confirms that the success of WinCLIP in the real world is contingent upon environmental awareness. By tracking AUROC, AUPRC, and F1-Max, we demonstrated that dynamic weighting provides a robust safety net for industrial inspection.
+
+\begin{thebibliography}{9}
+\bibitem{1} Jeong et al. (2023). WinCLIP. CVPR.
+\bibitem{2} Radford et al. (2021). CLIP. ICML.
+\bibitem{3} Bergmann et al. (2019). MVTec AD. CVPR.
+\end{thebibliography}
+
+\end{document}
