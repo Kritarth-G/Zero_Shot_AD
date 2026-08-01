@@ -1,0 +1,34 @@
+# Dataset Links and Access Notes
+
+This file contains the download links and access instructions for all external datasets evaluated in this project. Due to file size constraints, the raw datasets are not included directly in the submission and must be downloaded from their original sources.
+
+---
+
+## 1. MVTec AD (Anomaly Detection) Dataset
+* **Source:** Kaggle
+* **Download Link:** https://www.kaggle.com/datasets/ipythonx/mvtec-ad
+* **Access Notes:** -
+  - A free Kaggle account is required to download the dataset.
+  - Download the full dataset, extract it, and place the resulting category folders (e.g., `bottle`, `cable`) directly into `../04_data/mvtec_ad/`.
+
+## 2. Casting Product Image Data for Quality Inspection
+* **Source:** Kaggle 
+* **Download Link:** https://www.kaggle.com/datasets/ravirajsinh45/real-life-industrial-dataset-of-casting-product
+* **Access Notes:**
+  - A free Kaggle account is required to download the dataset.
+  - Download the `.zip` archive, extract it, and place the contents of the `casting_data/test/` folder (which contains `ok_front` and `def_front`) into `../04_data/casting_data/`.
+
+## 3. Magnetic Tile Defect Dataset
+* **Source:** Kaggle
+* **Download Link:** https://www.kaggle.com/datasets/yidazhang07/bridge-cracks-image
+* **Access Notes:**
+  - A free Kaggle account is required to download the dataset. 
+  - Extract the contents of the 'Magnetic-Tile-Defect/' folder (e.g., `MT_Blowhole`, `MT_Break`, `MT_Free`) into `../04_data/magnetic_tile/`.
+
+## 4. MVTec AD Synthetic (Custom Degraded Dataset)
+* **Source:** Locally Generated
+* **Download Link:** N/A
+* **Access Notes:**
+  - This dataset is not downloaded from an external source. It is generated dynamically by applying our custom degradation pipeline to the original MVTec AD dataset.
+  - **Prerequisite:** You must first download and extract the base MVTec AD dataset into `../04_data/mvtec_ad/`.
+  - **Generation:** Run the `generate_synthetic_mvtec.py` script provided in the codebase. This will automatically read the base dataset, apply randomized blur, dark, and grain augmentations, and save the resulting images to `../04_data/mvtec_ad_synthetic/`.
