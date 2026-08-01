@@ -1,0 +1,19 @@
+Group Number : 16
+Project Title: Dynamic Domain Adaptation for Zero-Shot Industrial Anomaly Detection
+Topic Number:  12
+Topic Name : Zero-shot visual detection for small-scale manufacturing
+Faculty: Prof. Pratik Narang 
+TA/Mentor : Ghufran Alam Siddiqui
+
+Members:
+1. Pratham Galbale
+   ID: 2023A1PS0198P
+   Email: f20230198@pilani.bits-pilani.ac.in
+
+2. Kritarth Gusain
+   ID: 2023AAPS0764P
+   Email: f20230764@pilani.bits-pilani.ac.in
+
+3. Yuvraj Singh Shehrawat
+   ID: 2023A7PS0538P
+   Email: f20230538@pilani.bits-pilani.ac.in
