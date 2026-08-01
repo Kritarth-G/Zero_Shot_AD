@@ -1,1 +1,0 @@
-# Zero_Shot_AD
